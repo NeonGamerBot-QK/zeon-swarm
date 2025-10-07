@@ -5,6 +5,9 @@ const app = express();
 const http = require("http");
 const server = http.createServer(app);
 const crypto = require("crypto");
+const fs = require('fs')
+const serverPub = fs.readFileSync('./data/host.pub').toString()
+const serverPriv = fs.readFileSync('./data/host.key').toString()
 const PORT = process.env.PORT || 3000;
 const publicKeyStore = new Map(); // userId -> publicKeyPEM
 const pendingChallenges = new Map(); // socketId -> {nonce, expiresAt, userId}
@@ -36,82 +39,22 @@ function verifySignature(publicKeyPem, message, signatureBase64) {
 io.attach(server);
 io.on("connection", (socket) => {
   console.log("socket connected", socket.id);
+  // Send the server's public key
+  socket.emit("server_public_key", serverPub);
 
-  // Step 1: Client sends its public key and optional userId to "public_key"
-  // data: { userId: 'alice', publicKey: '-----BEGIN PUBLIC KEY-----\n...' }
-  socket.on("public_key", (data) => {
-    try {
-      if (!data || !data.publicKey || !data.userId) {
-        socket.emit("auth_error", { message: "publicKey and userId required" });
-        return;
-      }
+  // Listen for client's auth event
+  socket.on("client_auth", (data) => {
+    const { publicKey, metadata, signature } = data;
+    const message = JSON.stringify(metadata);
 
-      const { userId, publicKey } = data;
-
-      // (Optional) register the public key for this userId (persist in DB)
-      publicKeyStore.set(userId, publicKey);
-
-      // Create challenge (nonce) and expire it in e.g. 60 seconds
-      const nonce = makeNonce();
-      const expiresAt = Date.now() + 60_000; // 60s
-      pendingChallenges.set(socket.id, { nonce, expiresAt, userId });
-
-      // Send challenge to client
-      socket.emit("challenge", { nonce, expiresAt });
-      console.log(`Sent challenge to ${socket.id} for user=${userId}`);
-    } catch (err) {
-      console.error(err);
-      socket.emit("auth_error", { message: "server error creating challenge" });
-    }
-  });
-
-  // Step 3: Client responds with signed nonce
-  // data: { userId: 'alice', nonce: '...', signature: 'base64' }
-  socket.on("challenge_response", (data) => {
-    try {
-      const pending = pendingChallenges.get(socket.id);
-      if (!pending) {
-        socket.emit("auth_error", { message: "no pending challenge" });
-        return;
-      }
-
-      const { userId, nonce: expectedNonce, expiresAt } = pending;
-      if (Date.now() > expiresAt) {
-        pendingChallenges.delete(socket.id);
-        socket.emit("auth_error", { message: "challenge expired" });
-        return;
-      }
-
-      if (
-        !data ||
-        data.userId !== userId ||
-        data.nonce !== expectedNonce ||
-        !data.signature
-      ) {
-        socket.emit("auth_error", { message: "invalid response" });
-        return;
-      }
-
-      const publicKeyPem = publicKeyStore.get(userId);
-      if (!publicKeyPem) {
-        socket.emit("auth_error", { message: "unknown user or public key" });
-        return;
-      }
-
-      const ok = verifySignature(publicKeyPem, expectedNonce, data.signature);
-      if (!ok) {
-        socket.emit("auth_failed", { message: "signature invalid" });
-        return;
-      }
-
-      // Auth success
-      authenticatedSockets.set(socket.id, userId);
-      pendingChallenges.delete(socket.id);
-      socket.emit("auth_success", { userId });
-      console.log(`Socket ${socket.id} authenticated as ${userId}`);
-    } catch (err) {
-      console.error(err);
-      socket.emit("auth_error", { message: "server verify error" });
+    const valid = verifySignature(publicKey, message, signature);
+    if (valid) {
+      console.log("✅ Client authenticated successfully");
+      console.log("Client metadata:", metadata);
+      socket.emit("auth_success", { message: "Authenticated!" });
+    } else {
+      console.log("❌ Invalid signature from client");
+      socket.emit("auth_failed", { message: "Invalid signature" });
     }
   });
 

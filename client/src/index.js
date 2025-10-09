@@ -1,2 +1,2 @@
 require("dotenv").config();
-const socketIo = require("socket-io");
+const socketIo = require("socket.io");

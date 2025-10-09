@@ -1,5 +1,5 @@
 const express = require("express");
-const SocketIo = require("socket-io");
+const SocketIo = require("socket.io");
 const io = SocketIo();
 const app = express();
 const http = require("http");
@@ -17,6 +17,7 @@ app.use(express.static("public"));
 function makeNonce() {
   return crypto.randomBytes(32).toString("base64");
 }
+
 
 // Utility: verify RSA-PSS signature (SHA-256)
 function verifySignature(publicKeyPem, message, signatureBase64) {

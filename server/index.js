@@ -18,7 +18,6 @@ function makeNonce() {
   return crypto.randomBytes(32).toString("base64");
 }
 
-
 // Utility: verify RSA-PSS signature (SHA-256)
 function verifySignature(publicKeyPem, message, signatureBase64) {
   const verify = crypto.createVerify("SHA256");

@@ -35,7 +35,10 @@ function encryptForClient(clientPublicKeyPem, payload) {
 
   // Encrypt payload with AES-GCM
   const cipher = crypto.createCipheriv("aes-256-gcm", aesKey, iv);
-  const encrypted = Buffer.concat([cipher.update(json, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(json, "utf8"),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
 
   // Encrypt AES key with client’s RSA public key (RSA-OAEP)
@@ -45,7 +48,7 @@ function encryptForClient(clientPublicKeyPem, payload) {
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
       oaepHash: "sha256",
     },
-    aesKey
+    aesKey,
   );
 
   // Return packet for client
@@ -72,7 +75,7 @@ function verifySignature(publicKeyPem, message, signatureBase64) {
         padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
       },
-      signature
+      signature,
     );
   } catch (err) {
     console.error("verifySignature error:", err.message);

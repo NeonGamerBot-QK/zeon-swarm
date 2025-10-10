@@ -1,26 +1,28 @@
 // a server needs keys! share keys! trade keys!
 const crypto = require("crypto");
 const { writeFileSync, existsSync } = require("fs");
+const openpgp = require("openpgp");
 if (existsSync("./data/host.pub") || existsSync("./data/host.key")) {
   console.log(
     `Keys exist already!, if you want to replace them remove the old ones!!`,
   );
   return;
 }
-// Generate RSA key pair (2048-bit is standard; 3072 or 4096 is stronger)
-const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
-  modulusLength: 4096,
-  publicKeyEncoding: {
-    type: "spki", // Recommended format for RSA public keys
-    format: "pem",
-  },
-  privateKeyEncoding: {
-    type: "pkcs8", // Recommended format for RSA private keys
-    format: "pem",
-  },
-});
+(async () => {
+  const { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
+    type: 'ecc', // Type of the key, defaults to ECC
+    curve: 'curve25519', // ECC curve name, defaults to curve25519
+    userIDs: [{ name: 'Jon Smith', email: 'jon@example.com' }], // you can pass multiple user IDs
+    passphrase: 'super long and hard to guess secret', // protects the private key
+    format: 'armored' // output key format, defaults to 'armored' (other options: 'binary' or 'object')
+  });
 
-console.log("Public Key:\n", publicKey);
-console.log("Private Key:\n", privateKey);
-writeFileSync("./data/host.pub", publicKey);
-writeFileSync("./data/host.key", privateKey);
+  console.log(privateKey);     // '-----BEGIN PGP PRIVATE KEY BLOCK ... '
+  console.log(publicKey);      // '-----BEGIN PGP PUBLIC KEY BLOCK ... '
+  console.log(revocationCertificate); // '-----BEGIN PGP PUBLIC KEY BLOCK ... '
+  writeFileSync("./data/host.pub", publicKey);
+  writeFileSync("./data/host.key", privateKey);
+  writeFileSync("./data/revocation.crt", revocationCertificate);
+  console.log(`Keys generated and saved to ./data/host.pub and ./data/host.key`)
+})();
+

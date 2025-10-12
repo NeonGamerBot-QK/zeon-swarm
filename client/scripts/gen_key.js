@@ -61,12 +61,14 @@ function generateCrypticName() {
     return suffixes[Math.floor(Math.random() * suffixes.length)];
   } else if (numWords === 2) {
     // Adjective + noun
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]
-      }`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
+      suffixes[Math.floor(Math.random() * suffixes.length)]
+    }`;
   } else {
     // 3-word phrase (e.g. "Echo of Shard")
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]
-      } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
+      middles[Math.floor(Math.random() * middles.length)]
+    } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
   }
 }
 

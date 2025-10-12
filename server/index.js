@@ -6,7 +6,7 @@ const fs = require("fs");
 const openpgp = require("openpgp");
 const app = express();
 const server = http.createServer(app);
-; (async () => {
+(async () => {
   const PORT = process.env.PORT || 4000;
   const publicKey = await openpgp.readKey({
     armoredKey: fs.readFileSync("./data/host.pub", "utf-8"),
@@ -48,7 +48,9 @@ const server = http.createServer(app);
       });
       const { data: text } = await openpgp.decrypt({
         message: msg,
-        verificationKeys: await openpgp.readKey({ armoredKey: socket.public_key }),
+        verificationKeys: await openpgp.readKey({
+          armoredKey: socket.public_key,
+        }),
         decryptionKeys: privKey,
       });
       if (text === `${socket.auth_code}`) {
@@ -59,41 +61,43 @@ const server = http.createServer(app);
         socket.emit("auth_failure");
         console.log(`Client ${socket.id} failed to authenticate.`);
       }
-    })
+    });
     function decryptMessage(encryptedMessage) {
-      return openpgp.readMessage({
-        armoredMessage: encryptedMessage,
-      }).then((message) =>
-        openpgp.decrypt({
-          message,
-          verificationKeys: publicKey,
-          decryptionKeys: privKey,
+      return openpgp
+        .readMessage({
+          armoredMessage: encryptedMessage,
         })
-      ).then(({ data }) => data);
+        .then((message) =>
+          openpgp.decrypt({
+            message,
+            verificationKeys: publicKey,
+            decryptionKeys: privKey,
+          }),
+        )
+        .then(({ data }) => data);
     }
 
     socket.on("on_math_response", async (data) => {
       if (!socket.authenticated) {
-        console.log(`Client ${socket.id} is not authenticated. Ignoring message.`);
+        console.log(
+          `Client ${socket.id} is not authenticated. Ignoring message.`,
+        );
         return;
       }
       const msg = await decryptMessage(data);
       console.log(`Received math response from ${socket.id}:`, msg);
       socket.emit("math_response_received");
-    })
+    });
   });
-
-
 
   app.get("/pubkey", (req, res) => {
     res.type("text/plain").send(serverPub);
   });
-  app.get('/clients', (req, res) => {
+  app.get("/clients", (req, res) => {
     res.json({ clients: Array.from(users.keys()) });
-  })
+  });
 
   server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
-
 })();

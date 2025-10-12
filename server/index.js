@@ -27,7 +27,7 @@ const server = http.createServer(app);
     socket.on("public_key", async (data) => {
       console.log("Received public key from client:", data);
       // Here you can store the client's public key for future use
-      socket.public_key = data;
+      socket.public_key = await openpgp.readKey({ armoredKey: data });
       const code = Math.floor(100000 + Math.random() * 900000); // generate a 6-digit code
       socket.auth_code = code;
       // send auth challange
@@ -36,7 +36,7 @@ const server = http.createServer(app);
       });
       const encrypted = await openpgp.encrypt({
         message: msg,
-        encryptionKeys: await openpgp.readKey({ armoredKey: data }),
+        encryptionKeys: socket.public_key,
         signingKeys: privKey,
         format: "armored",
       });
@@ -48,11 +48,10 @@ const server = http.createServer(app);
       });
       const { data: text } = await openpgp.decrypt({
         message: msg,
-        verificationKeys: await openpgp.readKey({
-          armoredKey: socket.public_key,
-        }),
+        verificationKeys: socket.public_key,
         decryptionKeys: privKey,
       });
+
       if (text === `${socket.auth_code}`) {
         socket.authenticated = true;
         socket.emit("auth_success");

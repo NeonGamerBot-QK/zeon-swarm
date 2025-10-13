@@ -8,10 +8,15 @@ const HOST_URL = process.env.SOCKET_IO_URL || "http://localhost:4000";
 const socket = io(HOST_URL);
 
 (async () => {
-  if (!fs.existsSync("./data/client.pub") || !fs.existsSync("./data/client.key")) {
-    console.log("Client keys not found! Please generate keys first using 'node scripts/gen_key.js'");
+  if (
+    !fs.existsSync("./data/client.pub") ||
+    !fs.existsSync("./data/client.key")
+  ) {
+    console.log(
+      "Client keys not found! Please generate keys first using 'node scripts/gen_key.js'",
+    );
     // require file
-    require('../scripts/gen_key.js');
+    require("../scripts/gen_key.js");
     console.log("Client keys generated!");
     // wait 2 seconds
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -53,29 +58,30 @@ const socket = io(HOST_URL);
     socket.on("on_ping", (data) => {
       console.log("Ping from server");
       // decrypt payload
-      const decrypted = openpgp.readMessage({
-        armoredMessage: data,
-      }).then(async (msg) => {
-        const { data: text } = await openpgp.decrypt({
-          message: msg,
-          verificationKeys: publicKey,
-          decryptionKeys: privKey,
+      const decrypted = openpgp
+        .readMessage({
+          armoredMessage: data,
+        })
+        .then(async (msg) => {
+          const { data: text } = await openpgp.decrypt({
+            message: msg,
+            verificationKeys: publicKey,
+            decryptionKeys: privKey,
+          });
+          console.log("Decrypted ping payload");
+          // reply with pong
+          const pongMsg = await openpgp.createMessage({
+            text: text,
+          });
+          const encryptedPong = await openpgp.encrypt({
+            message: pongMsg,
+            encryptionKeys: await openpgp.readKey({ armoredKey: serverPubKey }),
+            signingKeys: privKey,
+            format: "armored",
+          });
+          socket.emit("response_ping", encryptedPong);
         });
-        console.log("Decrypted ping payload");
-        // reply with pong
-        const pongMsg = await openpgp.createMessage({
-          text: text,
-        });
-        const encryptedPong = await openpgp.encrypt({
-          message: pongMsg,
-          encryptionKeys: await openpgp.readKey({ armoredKey: serverPubKey }),
-          signingKeys: privKey,
-          format: "armored",
-        });
-        socket.emit("response_ping", encryptedPong);
-      });
-
-    })
+    });
     socket.emit("auth_response", encrypted);
     const metadata = {
       os: process.platform,
@@ -98,10 +104,10 @@ const socket = io(HOST_URL);
   });
 
   socket.emit("public_key", publicKey.armor());
-  socket.on('auth_success', (data) => {
+  socket.on("auth_success", (data) => {
     console.log("Authentication successful!");
     socket.authenticated = true;
-  })
+  });
   socket.on("disconnect", () => {
     console.log("Disconnected from server");
   });

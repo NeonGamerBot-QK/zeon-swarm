@@ -28,8 +28,10 @@ const server = http.createServer(app);
       console.log("Received public key from client:", data);
       // Here you can store the client's public key for future use
       socket.public_key = await openpgp.readKey({ armoredKey: data });
-      socket.pgpinfo = (await (await openpgp.readKey({ armoredKey: data })).getPrimaryUser()).user.userID
-      console.log(socket.pgpinfo)
+      socket.pgpinfo = (
+        await (await openpgp.readKey({ armoredKey: data })).getPrimaryUser()
+      ).user.userID;
+      console.log(socket.pgpinfo);
 
       const code = Math.floor(100000 + Math.random() * 900000); // generate a 6-digit code
       socket.auth_code = code;
@@ -114,7 +116,7 @@ const server = http.createServer(app);
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
       users.delete(socket.id);
-    })
+    });
   });
 
   app.get("/pubkey", async (req, res) => {
@@ -124,10 +126,13 @@ const server = http.createServer(app);
     if (req.headers.accept == "application/json") {
       res.json({ clients: Array.from(users.keys()) });
     } else {
-      const ejsRenderOut = await require("ejs").renderFile(__dirname + '/views/client.ejs', {
-        clients: Array.from(users.values())
-      })
-      res.send(ejsRenderOut)
+      const ejsRenderOut = await require("ejs").renderFile(
+        __dirname + "/views/client.ejs",
+        {
+          clients: Array.from(users.values()),
+        },
+      );
+      res.send(ejsRenderOut);
     }
   });
 

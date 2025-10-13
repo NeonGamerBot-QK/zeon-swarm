@@ -83,10 +83,10 @@
 
 [![asciicast](https://asciinema.org/a/d3d2DVNK09vVk07PHxrpBdR5H.svg)](https://asciinema.org/a/d3d2DVNK09vVk07PHxrpBdR5H)
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
+
 - express
 - nodejs
 - ejs
@@ -97,7 +97,6 @@
 <!-- GETTING STARTED -->
 
 ## Getting Started
-
 
 ### Server
 
@@ -110,9 +109,7 @@ then start the server by running `node .`
 
 If you are using the executable make sure you have a `SOCKET_IO_URL` in the env (defaults to localhost:4000), and if no keys exists the script will generate some automaticly..
 
-
 if you are running locally, cd into the client dir, install deps, and run `node src/index.js`!
-
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -125,6 +122,7 @@ if you are running locally, cd into the client dir, install deps, and run `node 
 <!-- ROADMAP -->
 
 ## Roadmap
+
 - [x] basic connection
 - [ ] Metadata
 - [ ] pinging system

@@ -4,11 +4,11 @@ const { io } = require("socket.io-client");
 const openpgp = require("openpgp");
 const fs = require("fs");
 const path = require("path");
-const HOST_URL = process.env.SOCKET_IO_URL || "http://localhost:4000"
+const HOST_URL = process.env.SOCKET_IO_URL || "http://localhost:4000";
 const socket = io(HOST_URL);
 (async () => {
-  const ipInfo = await fetch('https://ipinfo.io/json').then(r => r.json())
-  let serverPubKey = await fetch(HOST_URL + "/pubkey").then(r => r.text());
+  const ipInfo = await fetch("https://ipinfo.io/json").then((r) => r.json());
+  let serverPubKey = await fetch(HOST_URL + "/pubkey").then((r) => r.text());
   const publicKey = await openpgp.readKey({
     armoredKey: fs.readFileSync("./data/client.pub", "utf-8"),
   });
@@ -43,17 +43,21 @@ const socket = io(HOST_URL);
     const metadata = {
       os: process.platform,
       node: process.version,
-      version: require(path.join(__dirname, '..', '/package.json')).version,
-      country: ipInfo.country ?? "UNK"
-    }
-    socket.emit("metadata", await openpgp.encrypt({
-      message: await openpgp.createMessage({ text: JSON.stringify(metadata) }),
-      encryptionKeys: await openpgp.readKey({ armoredKey: serverPubKey }),
-      signingKeys: privKey,
-      format: "armored",
-    })
+      version: require(path.join(__dirname, "..", "/package.json")).version,
+      country: ipInfo.country ?? "UNK",
+    };
+    socket.emit(
+      "metadata",
+      await openpgp.encrypt({
+        message: await openpgp.createMessage({
+          text: JSON.stringify(metadata),
+        }),
+        encryptionKeys: await openpgp.readKey({ armoredKey: serverPubKey }),
+        signingKeys: privKey,
+        format: "armored",
+      }),
     );
-  })
+  });
   socket.emit("public_key", publicKey.armor());
   // socket.on("");
 })();

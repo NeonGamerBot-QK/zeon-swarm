@@ -28,6 +28,9 @@ const server = http.createServer(app);
       console.log("Received public key from client:", data);
       // Here you can store the client's public key for future use
       socket.public_key = await openpgp.readKey({ armoredKey: data });
+      socket.pgpinfo = (await (await openpgp.readKey({ armoredKey: data })).getPrimaryUser()).user.userID
+      console.log(socket.pgpinfo)
+
       const code = Math.floor(100000 + Math.random() * 900000); // generate a 6-digit code
       socket.auth_code = code;
       // send auth challange
@@ -43,22 +46,27 @@ const server = http.createServer(app);
       socket.emit("auth_challenge", encrypted);
     });
     socket.on("auth_response", async (data) => {
-      const msg = await openpgp.readMessage({
-        armoredMessage: data,
-      });
-      const { data: text } = await openpgp.decrypt({
-        message: msg,
-        verificationKeys: socket.public_key,
-        decryptionKeys: privKey,
-      });
+      try {
+        const msg = await openpgp.readMessage({
+          armoredMessage: data,
+        });
+        const { data: text } = await openpgp.decrypt({
+          message: msg,
+          verificationKeys: socket.public_key,
+          decryptionKeys: privKey,
+        });
 
-      if (text === `${socket.auth_code}`) {
-        socket.authenticated = true;
-        socket.emit("auth_success");
-        console.log(`Client ${socket.id} authenticated successfully.`);
-      } else {
+        if (text === `${socket.auth_code}`) {
+          socket.authenticated = true;
+          socket.emit("auth_success");
+          console.log(`Client ${socket.id} authenticated successfully.`);
+        } else {
+          socket.emit("auth_failure");
+          console.log(`Client ${socket.id} failed to authenticate.`);
+        }
+      } catch (e) {
         socket.emit("auth_failure");
-        console.log(`Client ${socket.id} failed to authenticate.`);
+        console.log(`Client ${socket.id} failed to authenticate.`, e);
       }
     });
     function decryptMessage(encryptedMessage) {
@@ -87,13 +95,40 @@ const server = http.createServer(app);
       console.log(`Received math response from ${socket.id}:`, msg);
       socket.emit("math_response_received");
     });
+
+    socket.on("metadata", async (data) => {
+      if (!socket.authenticated) {
+        console.log(
+          `Client ${socket.id} is not authenticated. Ignoring message.`,
+        );
+        return;
+      }
+      const msg = await decryptMessage(data);
+      try {
+        socket.metadata = JSON.parse(msg);
+      } catch (e) {
+        socket.emit("metadata_error", "Invalid JSON");
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Client disconnected: ${socket.id}`);
+      users.delete(socket.id);
+    })
   });
 
-  app.get("/pubkey", (req, res) => {
-    res.type("text/plain").send(serverPub);
+  app.get("/pubkey", async (req, res) => {
+    res.type("text/plain").send(publicKey.armor());
   });
-  app.get("/clients", (req, res) => {
-    res.json({ clients: Array.from(users.keys()) });
+  app.get("/clients", async (req, res) => {
+    if (req.headers.accept == "application/json") {
+      res.json({ clients: Array.from(users.keys()) });
+    } else {
+      const ejsRenderOut = await require("ejs").renderFile(__dirname + '/views/client.ejs', {
+        clients: Array.from(users.values())
+      })
+      res.send(ejsRenderOut)
+    }
   });
 
   server.listen(PORT, () => {

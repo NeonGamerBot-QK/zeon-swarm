@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected Clients</title>
+</head>
+
+<body>
+
+    <h1>Connected Clients</h1>
+    <ul id="client-list">
+        <% clients.forEach(function(client) { %>
+            <li>
+                <%= client.pgpinfo ? client.pgpinfo.name : client.id %>
+                    <% if (client.metadata) { %>
+                        - <%= JSON.stringify(client.metadata) %>
+                            <% } %>
+            </li>
+            <% }); %>
+    </ul>
+</body>
+
+</html>

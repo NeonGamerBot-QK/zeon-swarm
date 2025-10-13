@@ -61,14 +61,12 @@ function generateCrypticName() {
     return suffixes[Math.floor(Math.random() * suffixes.length)];
   } else if (numWords === 2) {
     // Adjective + noun
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
-      suffixes[Math.floor(Math.random() * suffixes.length)]
-    }`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]
+      }`;
   } else {
     // 3-word phrase (e.g. "Echo of Shard")
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
-      middles[Math.floor(Math.random() * middles.length)]
-    } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]
+      } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
   }
 }
 
@@ -76,7 +74,8 @@ let [name, email] = process.argv.slice(2);
 if (!name || !email) {
   name = generateCrypticName();
   if (isServer) name += " [server]";
-  email = `${name.split(/ +/).join("-")}@${os.hostname()}`;
+  if (isServer) email = `${name.split(/ +/).join("-")}@${os.hostname()}`;
+  else email = os.platform()
   // console.log(`Provide an name and email via the cli, eg: "Name here" machine-name@device`)
   // return;
   console.warn(

@@ -61,14 +61,12 @@ function generateCrypticName() {
     return suffixes[Math.floor(Math.random() * suffixes.length)];
   } else if (numWords === 2) {
     // Adjective + noun
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
-      suffixes[Math.floor(Math.random() * suffixes.length)]
-    }`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]
+      }`;
   } else {
     // 3-word phrase (e.g. "Echo of Shard")
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
-      middles[Math.floor(Math.random() * middles.length)]
-    } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]
+      } ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
   }
 }
 
@@ -77,7 +75,7 @@ if (!name || !email) {
   name = generateCrypticName();
   if (isServer) name += " [server]";
   if (isServer) email = `${name.split(/ +/).join("-")}@${os.hostname()}`;
-  else email = os.platform();
+  else email = `${name.split(/ +/).join("-")}@${os.platform()}`
   // console.log(`Provide an name and email via the cli, eg: "Name here" machine-name@device`)
   // return;
   console.warn(
@@ -85,6 +83,7 @@ if (!name || !email) {
   );
 }
 (async () => {
+  if (!existsSync('./data')) require('fs').mkdirSync('./data')
   const { privateKey, publicKey, revocationCertificate } =
     await openpgp.generateKey({
       type: "ecc", // Type of the key, defaults to ECC
